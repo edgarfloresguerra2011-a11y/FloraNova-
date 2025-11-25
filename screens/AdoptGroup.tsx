@@ -4,6 +4,25 @@ import { ScreenProps, ScreenId, UserPlant, AppNotification } from '../types';
 import { ScreenContainer, Header } from '../components/Layout';
 import { Map, Info, Download, CheckCircle, TreeDeciduous, Globe, MapPin, ExternalLink, X, Droplets, Sun, Bug, Scissors, ChevronDown, ChevronUp, AlertCircle, Heart, Smile, Frown, Camera, Stethoscope, Loader2, CreditCard, ShieldCheck, Lock } from 'lucide-react';
 
+// Define Props Interface locally if not in types
+interface PlantCardProps {
+  plant: UserPlant;
+  onClick?: () => void;
+}
+
+const LeafIcon = ({size, className}: {size: number, className?: string}) => (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+);
+
+// Plant Card Component definition moved to top level to avoid scope issues
+const PlantCard: React.FC<PlantCardProps> = ({ plant, onClick }) => (
+    <div className={`relative bg-white rounded-3xl shadow-lg border-2 overflow-hidden transition-all duration-300 ${plant.health.status === 'sick' ? 'border-red-400 shadow-red-100 scale-[1.02]' : 'border-gray-100'}`}>
+        {plant.health.status === 'sick' && <div className="absolute inset-0 border-4 border-red-400 rounded-3xl animate-pulse z-0 pointer-events-none"></div>}
+        <div className="absolute top-4 right-4 z-20 max-w-[60%]"><div className={`relative bg-white p-3 rounded-2xl rounded-tr-none shadow-sm text-xs font-bold border ${plant.health.status === 'sick' ? 'text-red-600 border-red-100' : 'text-primary border-green-100'}`}>{plant.dialogue}<div className="absolute -bottom-2 right-0 w-4 h-4 bg-white border-b border-r transform rotate-45 translate-x-[-10px] translate-y-[-10px] z-0 border-inherit"></div></div></div>
+        <div className="flex p-4 relative z-10"><div className="w-24 h-32 bg-gray-100 rounded-2xl overflow-hidden shrink-0 relative shadow-sm"><img src={plant.img} className="w-full h-full object-cover" /><div className="absolute bottom-2 right-2 bg-white p-1.5 rounded-full shadow-md">{plant.emotion === 'happy' && <Smile className="text-green-500" size={20}/>}{plant.emotion === 'sad' && <Frown className="text-blue-500" size={20}/>}{plant.emotion === 'sick' && <AlertCircle className="text-red-500" size={20}/>}</div></div><div className="flex-1 pl-4 pt-2"><h3 className="font-bold text-lg text-textPrimary">{plant.name}</h3><p className="text-xs text-textSecondary italic mb-3">{plant.species}</p><div className="flex gap-2 mb-3 flex-wrap">{plant.health.water === 'needs_water' && <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1"><Droplets size={12}/> Sed</span>}{plant.health.status === 'ok' && <span className="bg-green-100 text-green-700 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1"><CheckCircle size={12}/> Sana</span>}</div><div className="flex gap-2">{plant.health.status === 'sick' || plant.isQuarantined ? (<button onClick={onClick} className="bg-red-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-red-200 flex items-center gap-2 hover:bg-red-600 transition-colors"><Stethoscope size={14}/> Tratar</button>) : (<button className="bg-gray-50 text-gray-600 px-4 py-2 rounded-xl text-xs font-bold border border-gray-200">Detalles</button>)}</div></div></div>
+    </div>
+);
+
 // --- ADOPT TREE SCREEN ---
 export const AdoptTree: React.FC<ScreenProps> = ({ onNavigate }) => {
   const [showMap, setShowMap] = useState(false);
@@ -31,7 +50,6 @@ export const AdoptTree: React.FC<ScreenProps> = ({ onNavigate }) => {
     <ScreenContainer>
       <Header title="Adoptar en Quito" rightAction={<button onClick={() => onNavigate(ScreenId.MY_TREES)} className="text-primary text-sm font-bold">Mis Árboles</button>} />
       
-      {/* Full Screen Map Modal */}
       {showMap && (
          <div className="fixed inset-0 z-50 bg-gray-900 flex flex-col animate-in fade-in duration-200">
             <div className="bg-white p-4 pt-12 flex justify-between items-center shadow-md z-10">
@@ -44,7 +62,6 @@ export const AdoptTree: React.FC<ScreenProps> = ({ onNavigate }) => {
          </div>
       )}
 
-      {/* Secure Checkout Modal */}
       {showCheckout && selectedPkg && (
           <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in slide-in-from-bottom-10">
               <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl flex flex-col max-h-[95vh] overflow-y-auto">
@@ -52,84 +69,18 @@ export const AdoptTree: React.FC<ScreenProps> = ({ onNavigate }) => {
                       <h3 className="font-bold text-lg flex items-center gap-2"><Lock size={18} className="text-green-600"/> Checkout Seguro</h3>
                       <button onClick={() => setShowCheckout(false)} className="p-1 bg-gray-100 rounded-full"><X size={20}/></button>
                   </div>
-
                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-6 flex gap-4 items-center">
                       <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0"><img src={selectedPkg.img} className="w-full h-full object-cover"/></div>
-                      <div>
-                          <h4 className="font-bold text-sm">{selectedPkg.label}</h4>
-                          <p className="text-xs text-gray-500">{selectedPkg.count} Árboles + Certificado + Mantenimiento</p>
-                          <p className="text-lg font-bold text-primary mt-1">${selectedPkg.price}.00</p>
-                      </div>
+                      <div><h4 className="font-bold text-sm">{selectedPkg.label}</h4><p className="text-xs text-gray-500">{selectedPkg.count} Árboles + Certificado + Mantenimiento</p><p className="text-lg font-bold text-primary mt-1">${selectedPkg.price}.00</p></div>
                   </div>
-
                   <p className="text-xs font-bold text-gray-500 uppercase mb-3 ml-1">Selecciona Pasarela de Pago</p>
                   <div className="space-y-3 mb-8">
-                      {/* Stripe Option */}
-                      <button 
-                        onClick={() => setPaymentMethod('stripe')}
-                        className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${paymentMethod === 'stripe' ? 'border-primary bg-primary/5 shadow-md' : 'border-gray-100 hover:border-gray-200'}`}
-                      >
-                          <div className="flex items-center gap-3">
-                              <div className="bg-indigo-600 text-white p-1.5 rounded-lg"><CreditCard size={20}/></div>
-                              <div className="text-left">
-                                  <span className="font-bold text-sm block text-gray-800">Tarjeta de Crédito (Stripe)</span>
-                                  <span className="text-[10px] text-gray-400">Visa, Mastercard, Amex</span>
-                              </div>
-                          </div>
-                          {paymentMethod === 'stripe' && <CheckCircle size={20} className="text-primary" fill="currentColor" color="white"/>}
-                      </button>
-                      
-                      {/* Payoneer/PayPal Option */}
-                      <button 
-                        onClick={() => setPaymentMethod('payoneer')}
-                        className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${paymentMethod === 'payoneer' ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-100 hover:border-gray-200'}`}
-                      >
-                           <div className="flex items-center gap-3">
-                               <div className="bg-blue-600 text-white p-1.5 rounded-lg font-bold text-[10px] w-8 h-8 flex items-center justify-center">P</div>
-                               <div className="text-left">
-                                  <span className="font-bold text-sm block text-gray-800">Payoneer / PayPal</span>
-                                  <span className="text-[10px] text-gray-400">Pago internacional seguro</span>
-                              </div>
-                           </div>
-                           {paymentMethod === 'payoneer' && <CheckCircle size={20} className="text-blue-500" fill="currentColor" color="white"/>}
-                      </button>
+                      <button onClick={() => setPaymentMethod('stripe')} className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${paymentMethod === 'stripe' ? 'border-primary bg-primary/5 shadow-md' : 'border-gray-100 hover:border-gray-200'}`}><div className="flex items-center gap-3"><div className="bg-indigo-600 text-white p-1.5 rounded-lg"><CreditCard size={20}/></div><div className="text-left"><span className="font-bold text-sm block text-gray-800">Tarjeta de Crédito (Stripe)</span><span className="text-[10px] text-gray-400">Visa, Mastercard, Amex</span></div></div>{paymentMethod === 'stripe' && <CheckCircle size={20} className="text-primary" fill="currentColor" color="white"/>}</button>
+                      <button onClick={() => setPaymentMethod('payoneer')} className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${paymentMethod === 'payoneer' ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-100 hover:border-gray-200'}`}><div className="flex items-center gap-3"><div className="bg-blue-600 text-white p-1.5 rounded-lg font-bold text-[10px] w-8 h-8 flex items-center justify-center">P</div><div className="text-left"><span className="font-bold text-sm block text-gray-800">Payoneer / PayPal</span><span className="text-[10px] text-gray-400">Pago internacional seguro</span></div></div>{paymentMethod === 'payoneer' && <CheckCircle size={20} className="text-blue-500" fill="currentColor" color="white"/>}</button>
                   </div>
-
-                  {paymentMethod === 'stripe' && (
-                      <div className="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200 animate-in fade-in">
-                          <div className="mb-3">
-                              <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Número de Tarjeta</label>
-                              <div className="flex items-center bg-white border border-gray-300 rounded-lg px-3 py-2">
-                                  <CreditCard size={16} className="text-gray-400 mr-2"/>
-                                  <input type="text" placeholder="0000 0000 0000 0000" className="w-full text-sm outline-none" />
-                              </div>
-                          </div>
-                          <div className="flex gap-3">
-                              <div className="flex-1">
-                                  <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Expira</label>
-                                  <input type="text" placeholder="MM/AA" className="w-full text-sm bg-white border border-gray-300 rounded-lg px-3 py-2 outline-none" />
-                              </div>
-                              <div className="flex-1">
-                                  <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">CVC</label>
-                                  <input type="text" placeholder="123" className="w-full text-sm bg-white border border-gray-300 rounded-lg px-3 py-2 outline-none" />
-                              </div>
-                          </div>
-                      </div>
-                  )}
-
                   <div className="mt-auto pt-4 border-t border-gray-100">
-                      <div className="flex items-center justify-center gap-2 text-[10px] text-gray-400 mb-4 bg-gray-50 py-2 rounded-lg">
-                          <ShieldCheck size={12} className="text-green-600"/> 
-                          <span className="font-medium">Transacción protegida con SSL de 256-bits</span>
-                      </div>
-                      <button 
-                        onClick={handlePayment}
-                        disabled={isProcessing}
-                        className={`w-full text-white font-bold py-4 rounded-2xl shadow-lg flex items-center justify-center gap-2 disabled:opacity-70 transition-all active:scale-[0.98] ${paymentMethod === 'stripe' ? 'bg-primary shadow-green-200' : 'bg-blue-600 shadow-blue-200'}`}
-                      >
-                          {isProcessing ? <Loader2 className="animate-spin" size={20}/> : <Lock size={18}/>}
-                          {isProcessing ? 'Procesando Pago...' : `Pagar $${selectedPkg.price}.00`}
-                      </button>
+                      <div className="flex items-center justify-center gap-2 text-[10px] text-gray-400 mb-4 bg-gray-50 py-2 rounded-lg"><ShieldCheck size={12} className="text-green-600"/> <span className="font-medium">Transacción protegida con SSL de 256-bits</span></div>
+                      <button onClick={handlePayment} disabled={isProcessing} className={`w-full text-white font-bold py-4 rounded-2xl shadow-lg flex items-center justify-center gap-2 disabled:opacity-70 transition-all active:scale-[0.98] ${paymentMethod === 'stripe' ? 'bg-primary shadow-green-200' : 'bg-blue-600 shadow-blue-200'}`}>{isProcessing ? <Loader2 className="animate-spin" size={20}/> : <Lock size={18}/>}{isProcessing ? 'Procesando Pago...' : `Pagar $${selectedPkg.price}.00`}</button>
                   </div>
               </div>
           </div>
@@ -166,10 +117,6 @@ export const AdoptTree: React.FC<ScreenProps> = ({ onNavigate }) => {
   );
 };
 
-const LeafIcon = ({size, className}: {size: number, className?: string}) => (
-    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
-);
-
 export const MyTrees: React.FC<ScreenProps> = ({ onNavigate, userPlants, onUpdatePlants, notifications, onUpdateNotifications }) => {
    const [showTreatmentModal, setShowTreatmentModal] = useState<UserPlant | null>(null);
    const [photoUploaded, setPhotoUploaded] = useState(false);
@@ -182,7 +129,19 @@ export const MyTrees: React.FC<ScreenProps> = ({ onNavigate, userPlants, onUpdat
            setPhotoUploaded(true);
            setTimeout(() => {
                if(showTreatmentModal && onUpdatePlants && userPlants) {
-                   const updatedPlants = userPlants.map(p => { if(p.id === showTreatmentModal.id) { return { ...p, health: { status: 'ok', water: 'ok', pests: 'ok' } as any, emotion: 'happy', dialogue: "¡Gracias! Me siento mucho mejor. 😊", isQuarantined: false }; } return p; });
+                   const updatedPlants = userPlants.map(p => { 
+                        if(p.id === showTreatmentModal.id) { 
+                            const updatedPlant: UserPlant = { 
+                                ...p, 
+                                health: { status: 'ok', water: 'ok', pests: 'ok' }, 
+                                emotion: 'happy', 
+                                dialogue: "¡Gracias! Me siento mucho mejor. 😊", 
+                                isQuarantined: false 
+                            };
+                            return updatedPlant;
+                        } 
+                        return p; 
+                   });
                    onUpdatePlants(updatedPlants);
                    alert("¡Excelente! Tu planta se ve mejor. Sigue así.");
                    setShowTreatmentModal(null); setPhotoUploaded(false);
@@ -203,19 +162,6 @@ export const MyTrees: React.FC<ScreenProps> = ({ onNavigate, userPlants, onUpdat
       </ScreenContainer>
    );
 };
-
-interface PlantCardProps {
-  plant: UserPlant;
-  onClick: () => void;
-}
-
-const PlantCard: React.FC<PlantCardProps> = ({ plant, onClick }) => (
-    <div className={`relative bg-white rounded-3xl shadow-lg border-2 overflow-hidden transition-all duration-300 ${plant.health.status === 'sick' ? 'border-red-400 shadow-red-100 scale-[1.02]' : 'border-gray-100'}`}>
-        {plant.health.status === 'sick' && <div className="absolute inset-0 border-4 border-red-400 rounded-3xl animate-pulse z-0 pointer-events-none"></div>}
-        <div className="absolute top-4 right-4 z-20 max-w-[60%]"><div className={`relative bg-white p-3 rounded-2xl rounded-tr-none shadow-sm text-xs font-bold border ${plant.health.status === 'sick' ? 'text-red-600 border-red-100' : 'text-primary border-green-100'}`}>{plant.dialogue}<div className="absolute -bottom-2 right-0 w-4 h-4 bg-white border-b border-r transform rotate-45 translate-x-[-10px] translate-y-[-10px] z-0 border-inherit"></div></div></div>
-        <div className="flex p-4 relative z-10"><div className="w-24 h-32 bg-gray-100 rounded-2xl overflow-hidden shrink-0 relative shadow-sm"><img src={plant.img} className="w-full h-full object-cover" /><div className="absolute bottom-2 right-2 bg-white p-1.5 rounded-full shadow-md">{plant.emotion === 'happy' && <Smile className="text-green-500" size={20}/>}{plant.emotion === 'sad' && <Frown className="text-blue-500" size={20}/>}{plant.emotion === 'sick' && <AlertCircle className="text-red-500" size={20}/>}</div></div><div className="flex-1 pl-4 pt-2"><h3 className="font-bold text-lg text-textPrimary">{plant.name}</h3><p className="text-xs text-textSecondary italic mb-3">{plant.species}</p><div className="flex gap-2 mb-3 flex-wrap">{plant.health.water === 'needs_water' && <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1"><Droplets size={12}/> Sed</span>}{plant.health.status === 'ok' && <span className="bg-green-100 text-green-700 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1"><CheckCircle size={12}/> Sana</span>}</div><div className="flex gap-2">{plant.health.status === 'sick' || plant.isQuarantined ? (<button onClick={onClick} className="bg-red-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-red-200 flex items-center gap-2 hover:bg-red-600 transition-colors"><Stethoscope size={14}/> Tratar</button>) : (<button className="bg-gray-50 text-gray-600 px-4 py-2 rounded-xl text-xs font-bold border border-gray-200">Detalles</button>)}</div></div></div>
-    </div>
-);
 
 export const Certificate: React.FC<ScreenProps> = ({ onNavigate }) => {
    return (

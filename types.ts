@@ -60,6 +60,10 @@ export interface PlantData {
     name?: string;
     remedies?: string[];
   };
+  uses?: Array<{
+      type: 'Medicinal' | 'Comestible' | 'Ornamental' | 'Industrial' | 'Otro';
+      description: string;
+  }>;
   soilAnalysis?: string;
   soilComposition?: string;
   soilRecommendations?: string;

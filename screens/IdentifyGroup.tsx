@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ScreenProps, ScreenId, PlantData } from '../types';
 import { ScreenContainer } from '../components/Layout';
-import { Image as ImageIcon, ChevronLeft, Loader2, Scan, Bug, Box, Plus, MapPin, RefreshCcw, ArrowUpFromLine, X, Camera as CameraIcon, Crown, Lock, Sun, Home, AlertTriangle, ShieldCheck, Video } from 'lucide-react';
+import { Image as ImageIcon, ChevronLeft, Loader2, Scan, Bug, Box, Plus, MapPin, RefreshCcw, ArrowUpFromLine, X, Camera as CameraIcon, Crown, Lock, Sun, Home, AlertTriangle, ShieldCheck, Video, Info, Utensils, Pill, Sparkles, Hammer } from 'lucide-react';
 import { GoogleGenAI, Type } from "@google/genai";
 
 type ScanMode = 'HEALTH' | 'ROOM' | 'INVENTORY' | 'HOME_SCAN';
@@ -115,7 +115,16 @@ export const Identify: React.FC<ScreenProps> = ({ onNavigate, onDataChange, user
       let schema = null;
 
       if (mode === 'HEALTH') {
-          prompt = `Analyze plant image. 1. Identify. 2. DIAGNOSE HEALTH. 3. REMEDIES. 4. SOIL. 5. GROWTH. 6. LIGHT. Response Spanish JSON.`;
+          prompt = `
+            Analyze this biological image deeply (Plant, Fungi, Fruit, or Vegetable).
+            1. IDENTIFY precisely (Common & Scientific name).
+            2. DIAGNOSE HEALTH (pests, fungi, rot?).
+            3. USES: Is it Edible? Medicinal? Ornamental? Toxic? Explain uses clearly (e.g. "Menta: Good for tea/digestion").
+            4. SOIL analysis.
+            5. GROWTH projection.
+            6. LIGHT needs.
+            Return Spanish JSON.
+          `;
           schema = {
             type: Type.OBJECT,
             properties: {
@@ -129,6 +138,16 @@ export const Identify: React.FC<ScreenProps> = ({ onNavigate, onDataChange, user
                         detected: { type: Type.BOOLEAN },
                         name: { type: Type.STRING },
                         remedies: { type: Type.ARRAY, items: { type: Type.STRING } }
+                    }
+                },
+                uses: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            type: { type: Type.STRING, enum: ['Medicinal', 'Comestible', 'Ornamental', 'Industrial', 'Otro'] },
+                            description: { type: Type.STRING }
+                        }
                     }
                 },
                 soilAnalysis: { type: Type.STRING },
@@ -303,6 +322,16 @@ export const Identify: React.FC<ScreenProps> = ({ onNavigate, onDataChange, user
                     <div className="w-10"></div>
                 </div>
 
+                {/* Proximity Tip Overlay */}
+                {mode === 'HEALTH' && (
+                    <div className="absolute bottom-32 left-0 right-0 flex justify-center pointer-events-none z-20">
+                        <div className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-full flex items-center gap-2 text-white text-xs font-bold shadow-lg animate-bounce">
+                            <Scan size={14} className="text-yellow-400"/>
+                            <span>Tip: Acércate lo más posible a hojas/frutos</span>
+                        </div>
+                    </div>
+                )}
+
                 {mode === 'HEALTH' && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <div className="w-64 h-80 border border-white/30 rounded-3xl relative overflow-hidden">
@@ -326,7 +355,7 @@ export const Identify: React.FC<ScreenProps> = ({ onNavigate, onDataChange, user
 
                 <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-20 overflow-x-auto px-4 pb-2 no-scrollbar">
                      {[
-                        { id: 'HEALTH', label: 'Salud', icon: Bug },
+                        { id: 'HEALTH', label: 'Salud/Usos', icon: Bug },
                         { id: 'ROOM', label: 'AR Room', icon: Box, locked: !userState?.isPro },
                         { id: 'HOME_SCAN', label: 'Video', icon: Video, locked: !userState?.isPro },
                         { id: 'INVENTORY', label: 'Inventario', icon: Scan }
@@ -344,7 +373,7 @@ export const Identify: React.FC<ScreenProps> = ({ onNavigate, onDataChange, user
                 {isAnalyzing && (
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-40 flex flex-col items-center justify-center text-white">
                         <Loader2 size={40} className="animate-spin text-primary mb-3"/>
-                        <span className="font-bold tracking-widest text-sm">ANALIZANDO...</span>
+                        <span className="font-bold tracking-widest text-sm">ANALIZANDO DETALLES...</span>
                     </div>
                 )}
             </>
@@ -394,6 +423,7 @@ export const IdentifyResult: React.FC<ScreenProps> = ({ onNavigate, data, userSt
   const isARMode = plantData.mode === 'ROOM' || plantData.mode === 'INVENTORY';
   const isHomeScan = plantData.mode === 'HOME_SCAN';
 
+  // AR Studio Logic (Same as before)...
   if (showARStudio) {
       return (
           <ScreenContainer className="bg-black h-screen flex flex-col relative overflow-hidden">
@@ -429,6 +459,7 @@ export const IdentifyResult: React.FC<ScreenProps> = ({ onNavigate, data, userSt
   }
 
   if (isHomeScan) {
+      // ... (Same Home Scan UI as before)
       return (
         <ScreenContainer className="bg-gray-50 flex flex-col h-screen">
             <div className="h-48 relative shrink-0">
@@ -495,9 +526,31 @@ export const IdentifyResult: React.FC<ScreenProps> = ({ onNavigate, data, userSt
       </div>
       <div className="flex-1 bg-white rounded-t-[2rem] -mt-6 relative z-10 flex flex-col overflow-hidden p-8 shadow-[0_-10px_30px_rgba(0,0,0,0.2)]">
          <h1 className="text-2xl font-bold text-black mb-1">{plantData.commonName}</h1>
-         <p className="text-gray-500 text-sm mb-6 leading-relaxed">{plantData.description?.substring(0, 100)}...</p>
+         <p className="text-gray-500 text-sm mb-6 leading-relaxed">{plantData.description?.substring(0, 120)}...</p>
+         
          {!isARMode && (
             <div className="space-y-4 overflow-y-auto pb-20 no-scrollbar">
+                
+                {/* NEW: Uses & Properties Section */}
+                {plantData.uses && plantData.uses.length > 0 && (
+                    <div className="space-y-3">
+                        <h3 className="font-bold text-xs text-gray-400 uppercase tracking-wider">Usos y Propiedades</h3>
+                        <div className="grid gap-3">
+                            {plantData.uses.map((use, i) => (
+                                <div key={i} className="flex items-start gap-3 p-3 bg-purple-50 rounded-xl border border-purple-100">
+                                    <div className="p-2 bg-purple-100 text-purple-600 rounded-lg shrink-0">
+                                        {use.type === 'Medicinal' ? <Pill size={16}/> : use.type === 'Comestible' ? <Utensils size={16}/> : use.type === 'Ornamental' ? <Sparkles size={16}/> : <Info size={16}/>}
+                                    </div>
+                                    <div>
+                                        <span className="text-xs font-bold text-purple-800 block mb-0.5">{use.type}</span>
+                                        <p className="text-xs text-gray-600 leading-tight">{use.description}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <div className={`p-5 rounded-xl border ${isPro ? 'bg-yellow-50 border-yellow-200' : 'bg-gray-50 border-gray-100'}`}>
                     <div className="flex items-center gap-2 mb-2 font-bold text-xs uppercase">
                         <Sun size={14} className={isPro ? 'text-yellow-600' : 'text-gray-400'}/> 
